@@ -1,0 +1,157 @@
+.MODEL SMALL
+
+.DATA
+menu DB "To-Do List Program", 10, 13, "1. Add Task", 10, 13, "2. View Tasks", 10, 13, "3. Exit", 10, 13, "$"
+prompt DB "Choose an option: $"
+add_msg DB "Enter task (max 32 characters): $"
+task_list DB 320 DUP(' ')          ; Array for 10 tasks, each 32 bytes
+task_count DW 0                    ; Number of tasks in the list
+input_buffer DB 33 DUP(0)          ; Buffer for input (max 32 chars + 1 length byte)
+newline DB 10, 13, "$"             ; Newline for formatting
+task_full_msg DB "Task list is full!$", "$"
+no_tasks_msg DB "No tasks available.$", "$"
+error_msg DB "Task length is too long. Please enter a task within 32 characters.$", "$"  ; Error message
+
+.CODE
+MAIN PROC FAR
+    .STARTUP
+
+MAIN_MENU:
+    ; Display menu
+    LEA DX, menu
+    MOV AH, 09H
+    INT 21H
+
+    ; Prompt for choice
+    LEA DX, prompt
+    MOV AH, 09H
+    INT 21H
+
+    ; Get user choice
+    MOV AH, 01H                    ; Read single character
+    INT 21H
+    SUB AL, '0'                    ; Convert ASCII to integer
+
+    ; Handle user choice
+    CMP AL, 1                      ; Check option
+    JE ADD_TASK
+    CMP AL, 2
+    JE VIEW_TASKS
+    CMP AL, 3
+    JMP EXIT_PROGRAM
+    JMP MAIN_MENU                  ; Invalid choice, re-display menu
+
+ADD_TASK:
+    ; Check if task list is full
+    MOV AX, task_count
+    CMP AX, 10                     ; Max 10 tasks
+    JAE TASK_FULL                  ; If >= 10, jump to TASK_FULL
+
+    ; Prompt for task input
+    LEA DX, add_msg
+    MOV AH, 09H
+    INT 21H
+
+    ; Clear the input buffer (reset length byte and input buffer)
+    LEA DI, input_buffer
+    MOV BYTE PTR [DI], 32          ; Max length (32 characters)
+    MOV BYTE PTR [DI+1], 0         ; Initialize the length to 0
+
+    ; Read task input (using DOS function 0Ah to read a string)
+    LEA DX, input_buffer
+    MOV AH, 0AH
+    INT 21H
+
+    ; Check input length (input_buffer[0] stores the length of input)
+    MOV AL, input_buffer[0]
+    CMP AL, 0                      ; Ensure at least one character was entered
+    JE MAIN_MENU
+
+    ; Check if the task length exceeds 32 characters
+    MOV AL, input_buffer[0]        ; Length of the input
+    CMP AL, 32                     ; Max task length is 32
+    JG TASK_TOO_LONG               ; If longer than 32, jump to TASK_TOO_LONG
+
+    ; Copy task to task_list
+    MOV AX, task_count             ; Task count index
+    MOV BX, 32                     ; Task size (32 bytes)
+    MUL BX                         ; Calculate offset: AX = task_count * 32
+    LEA SI, input_buffer + 1       ; Start of input (skip length byte)
+    LEA DI, task_list              ; Base address of task_list
+    ADD DI, AX                     ; Add offset to DI
+
+    MOV CX, [input_buffer[0]]        ; Length of the task (from input buffer)
+    REP MOVSB                      ; Copy the task
+    MOV AL, '$'                    ; Add string terminator
+    MOV [DI], AL                   ; Place `$` after the task
+
+    ; Increment task count
+    INC WORD PTR task_count
+
+    JMP MAIN_MENU                  ; Return to menu
+
+TASK_FULL:
+    ; Display "Task list is full" message
+    LEA DX, newline
+    MOV AH, 09H
+    INT 21H
+
+    LEA DX, task_full_msg
+    MOV AH, 09H
+    INT 21H
+
+    JMP MAIN_MENU                  ; Return to menu
+
+TASK_TOO_LONG:
+    ; Display "Task length is too long" message
+    LEA DX, newline
+    MOV AH, 09H
+    INT 21H
+
+    ; Display the error message
+    LEA DX, error_msg              ; Use LEA to load the address of the error message
+    MOV AH, 09H
+    INT 21H
+
+    JMP MAIN_MENU                  ; Return to menu
+
+VIEW_TASKS:
+    ; Check if there are tasks
+    MOV AX, task_count
+    CMP AX, 0
+    JE NO_TASKS
+
+    ; Print all tasks in the list
+    LEA DI, task_list              ; Start from the first task
+    MOV CX, task_count             ; Total number of tasks
+
+PRINT_TASKS:
+    ; Display the task
+    LEA DX, DI                     ; Load address of current task
+    MOV AH, 09H
+    INT 21H
+
+    ; Print newline for better formatting
+    LEA DX, newline
+    MOV AH, 09H
+    INT 21H
+
+    ; Move to the next task
+    ADD DI, 32                     ; Increment DI by task size (32 bytes)
+    LOOP PRINT_TASKS               ; Loop until CX = 0
+
+    JMP MAIN_MENU                  ; Return to menu
+
+NO_TASKS:
+    ; Display "No tasks available" message
+    LEA DX, no_tasks_msg
+    MOV AH, 09H
+    INT 21H
+
+    JMP MAIN_MENU                  ; Return to menu
+
+EXIT_PROGRAM:
+    ; Exit the program
+    .EXIT  
+MAIN ENDP
+END MAIN
