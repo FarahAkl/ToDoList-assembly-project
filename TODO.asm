@@ -5,9 +5,9 @@
 menu DB "To-Do List Program", 10, 13, "1. Add Task", 10, 13, "2. View Tasks", 10, 13, "3. Exit", 10, 13, "$"
 prompt DB "Choose an option: $"
 add_msg DB "Enter task (max 32 characters): $"
-task_list DB 320 DUP(' ')  ; Array for 10 tasks, each 32 bytes
+task_list DB 10 DUP(32 DUP(?))  ; 10 groups of 32 uninitialized bytes
 task_count DW 0            ; Number of tasks in the list
-input_buffer DB 33 DUP(0)  ; Buffer for input (max 32 chars + 1 length byte)
+input_buffer DB 33 DUP(?)  ; Buffer for input (max 32 chars + 1 length byte)
 newline DB 10, 13, "$"     ; Newline for formatting
 task_full_msg DB "Task list is full!$", "$"
 no_tasks_msg DB "No tasks available.$", "$"
