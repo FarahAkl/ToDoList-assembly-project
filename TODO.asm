@@ -32,7 +32,7 @@ MAIN_MENU:
     MOV AH, 01H                    ; Read single character
     INT 21H
     SUB AL, '0'                    ; Convert ASCII to integer
-
+    CALL NEWLINEE
     ; Handle user choice
     CMP AL, 1                      ; Check option
     JE ADD_TASK
@@ -164,4 +164,10 @@ NO_TASKS:
 EXIT_PROGRAM:
     .EXIT
 MAIN ENDP
+NEWLINEE PROC NEAR
+    LEA DX,newline
+    MOV AH, 9H
+    INT 21H
+    RET
+NEWLINEE ENDP
 END MAIN
