@@ -1,19 +1,20 @@
 .MODEL SMALL
+.STACK 100H
 
 .DATA
 menu DB "To-Do List Program", 10, 13, "1. Add Task", 10, 13, "2. View Tasks", 10, 13, "3. Exit", 10, 13, "$"
 prompt DB "Choose an option: $"
 add_msg DB "Enter task (max 32 characters): $"
-task_list DB 320 DUP(' ')          ; Array for 10 tasks, each 32 bytes
-task_count DW 0                    ; Number of tasks in the list
-input_buffer DB 33 DUP(0)          ; Buffer for input (max 32 chars + 1 length byte)
-newline DB 10, 13, "$"             ; Newline for formatting
+task_list DB 320 DUP(' ')  ; Array for 10 tasks, each 32 bytes
+task_count DW 0            ; Number of tasks in the list
+input_buffer DB 33 DUP(0)  ; Buffer for input (max 32 chars + 1 length byte)
+newline DB 10, 13, "$"     ; Newline for formatting
 task_full_msg DB "Task list is full!$", "$"
 no_tasks_msg DB "No tasks available.$", "$"
 error_msg DB "Task length is too long. Please enter a task within 32 characters.$", "$"  ; Error message
 
 .CODE
-MAIN PROC FAR
+MAIN PROC
     .STARTUP
 
 MAIN_MENU:
@@ -52,7 +53,7 @@ ADD_TASK:
     MOV AH, 09H
     INT 21H
 
-    ; Clear the input buffer (reset length byte and input buffer)
+    ; Clear the input buffer
     LEA DI, input_buffer
     MOV BYTE PTR [DI], 32          ; Max length (32 characters)
     MOV BYTE PTR [DI+1], 0         ; Initialize the length to 0
@@ -80,10 +81,8 @@ ADD_TASK:
     LEA DI, task_list              ; Base address of task_list
     ADD DI, AX                     ; Add offset to DI
 
-    MOV CX, [input_buffer[0]]        ; Length of the task (from input buffer)
-    REP MOVSB                      ; Copy the task
-    MOV AL, '$'                    ; Add string terminator
-    MOV [DI], AL                   ; Place `$` after the task
+    MOV CX, 32                     ; Copy 32 bytes (task length)
+    REP MOVSB                      ; Copy task to task_list
 
     ; Increment task count
     INC WORD PTR task_count
@@ -122,12 +121,19 @@ VIEW_TASKS:
     JE NO_TASKS
 
     ; Print all tasks in the list
-    LEA DI, task_list              ; Start from the first task
+    XOR BX, BX                     ; Task index = 0 (start from first task)
     MOV CX, task_count             ; Total number of tasks
 
 PRINT_TASKS:
+    ; Calculate the offset of the current task
+    MOV AX, BX                     ; Task index
+    MOV DX, 32                     ; Task size (32 bytes)
+    MUL DX                         ; Offset = BX * 32
+    LEA DI, task_list              ; Base address of task_list
+    ADD DI, AX                     ; Add offset to DI
+
     ; Display the task
-    LEA DX, DI                     ; Load address of current task
+    MOV DX, DI                     ; Point DX to the current task
     MOV AH, 09H
     INT 21H
 
@@ -137,21 +143,25 @@ PRINT_TASKS:
     INT 21H
 
     ; Move to the next task
-    ADD DI, 32                     ; Increment DI by task size (32 bytes)
-    LOOP PRINT_TASKS               ; Loop until CX = 0
+    INC BX                         ; Increment task index
+    CMP BX, CX                     ; Check if we've printed all tasks
+    JL PRINT_TASKS                 ; If BX < CX, repeat
 
     JMP MAIN_MENU                  ; Return to menu
 
 NO_TASKS:
     ; Display "No tasks available" message
+    LEA DX, newline
+    MOV AH, 09H
+    INT 21H
+
     LEA DX, no_tasks_msg
     MOV AH, 09H
     INT 21H
 
     JMP MAIN_MENU                  ; Return to menu
-
+    
 EXIT_PROGRAM:
-    ; Exit the program
-    .EXIT  
+    .EXIT
 MAIN ENDP
 END MAIN
