@@ -18,7 +18,7 @@ MAIN PROC
     .STARTUP
 
 MAIN_MENU:
-        CALL NEWLINEE
+    CALL NEWLINEE
     ; Display menu
     LEA DX, menu
     MOV AH, 09H
@@ -86,33 +86,25 @@ ADD_TASK:
     REP MOVSB                      ; Copy task to task_list
 
     ; Increment task count
-    INC WORD PTR task_count
+    INC task_count
 
     JMP MAIN_MENU                  ; Return to menu
 
 TASK_FULL:
     ; Display "Task list is full" message
-    LEA DX, newline
-    MOV AH, 09H
-    INT 21H
-
+    CALL NEWLINEE
     LEA DX, task_full_msg
     MOV AH, 09H
     INT 21H
-
     JMP MAIN_MENU                  ; Return to menu
 
 TASK_TOO_LONG:
-    ; Display "Task length is too long" message
-    LEA DX, newline
-    MOV AH, 09H
-    INT 21H
-
+    
+    CALL NEWLINEE
     ; Display the error message
     LEA DX, error_msg              ; Use LEA to load the address of the error message
     MOV AH, 09H
     INT 21H
-
     JMP MAIN_MENU                  ; Return to menu
 
 VIEW_TASKS:
@@ -138,24 +130,16 @@ PRINT_TASKS:
     MOV AH, 09H
     INT 21H
 
-    ; Print newline for better formatting
-    LEA DX, newline
-    MOV AH, 09H
-    INT 21H
-
+    CALL NEWLINEE
     ; Move to the next task
     INC BX                         ; Increment task index
     CMP BX, CX                     ; Check if we've printed all tasks
     JL PRINT_TASKS                 ; If BX < CX, repeat
-
     JMP MAIN_MENU                  ; Return to menu
 
 NO_TASKS:
     ; Display "No tasks available" message
-    LEA DX, newline
-    MOV AH, 09H
-    INT 21H
-
+    CALL NEWLINEE
     LEA DX, no_tasks_msg
     MOV AH, 09H
     INT 21H
