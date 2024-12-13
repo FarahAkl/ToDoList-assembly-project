@@ -69,11 +69,6 @@ ADD_TASK:
     CMP AL, 0                      ; Ensure at least one character was entered
     JE MAIN_MENU
 
-    ; Check if the task length exceeds 32 characters
-    MOV AL, input_buffer[0]        ; Length of the input
-    CMP AL, 32                     ; Max task length is 32
-    JG TASK_TOO_LONG               ; If longer than 32, jump to TASK_TOO_LONG
-
     ; Copy task to task_list
     MOV AX, task_count             ; Task count index
     MOV BX, 32                     ; Task size (32 bytes)
@@ -94,15 +89,6 @@ TASK_FULL:
     ; Display "Task list is full" message
     CALL NEWLINEE
     LEA DX, task_full_msg
-    MOV AH, 09H
-    INT 21H
-    JMP MAIN_MENU                  ; Return to menu
-
-TASK_TOO_LONG:
-    
-    CALL NEWLINEE
-    ; Display the error message
-    LEA DX, error_msg              ; Use LEA to load the address of the error message
     MOV AH, 09H
     INT 21H
     JMP MAIN_MENU                  ; Return to menu
