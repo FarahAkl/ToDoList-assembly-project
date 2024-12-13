@@ -18,6 +18,7 @@ MAIN PROC
     .STARTUP
 
 MAIN_MENU:
+        CALL NEWLINEE
     ; Display menu
     LEA DX, menu
     MOV AH, 09H
