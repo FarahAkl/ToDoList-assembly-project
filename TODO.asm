@@ -73,13 +73,11 @@ ADD_TASK:
     LEA SI, input_buffer + 1       ; Start of input (skip length byte)
     LEA DI, task_list              ; Base address of task_list
     ADD DI, AX                     ; Add offset to DI
-
     MOV CX, 32                     ; Copy 32 bytes (task length)
     REP MOVSB                      ; Copy task to task_list
 
     ; Increment task count
     INC task_count
-
     JMP MAIN_MENU                  ; Return to menu
 
 TASK_FULL:
@@ -123,7 +121,6 @@ NO_TASKS:
     CALL NEWLINEE
     LEA DX, no_tasks_msg
     CALL PRINTSTR
-
     JMP MAIN_MENU                  ; Return to menu
     
 EXIT_PROGRAM:
