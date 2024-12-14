@@ -1,140 +1,132 @@
-.MODEL SMALL
-.STACK 100H
+.model small
+.stack 100h
 
-.DATA
-menu DB "To-Do List Program", 10, 13, "1. Add Task", 10, 13, "2. View Tasks", 10, 13, "3. Exit", 10, 13, "$"
-prompt DB "Choose an option: $"
-add_msg DB "Enter task (max 32 characters): $"
-task_list DB 10 DUP(32 DUP(?))  ; 10 groups of 32 uninitialized bytes
-task_count DW 0            ; Number of tasks in the list
-input_buffer DB 33 DUP(?)  ; Buffer for input (max 32 chars + 1 length byte)
-newline DB 10, 13, "$"     ; Newline for formatting
-task_full_msg DB "Task list is full!$", "$"
-no_tasks_msg DB "No tasks available.$", "$"
-error_msg DB "Task length is too long. Please enter a task within 32 characters.$", "$"  ; Error message
-
-.CODE
-MAIN PROC
-    .STARTUP
-
-MAIN_MENU:
-    CALL NEWLINEE
-    ; Display menu
-    LEA DX, menu
-    CALL PRINTSTR
-
-    ; Prompt for choice
-    LEA DX, prompt
-    CALL PRINTSTR
-
-    ; Get user choice
-    MOV AH, 01H                    ; Read single character
-    INT 21H
-    SUB AL, '0'                    ; Convert ASCII to integer
-    CALL NEWLINEE
-    ; Handle user choice
-    CMP AL, 1                      ; Check option
-    JE ADD_TASK
-    CMP AL, 2
-    JE VIEW_TASKS
-    CMP AL, 3
-    JMP EXIT_PROGRAM
-    JMP MAIN_MENU                  ; Invalid choice, re-display menu
-
-ADD_TASK:
-    ; Check if task list is full
-    MOV AX, task_count
-    CMP AX, 10                     ; Max 10 tasks
-    JAE TASK_FULL                  ; If >= 10, jump to TASK_FULL
-
-    ; Prompt for task input
-    LEA DX, add_msg
-    CALL PRINTSTR
-
-    ; Clear the input buffer
-    LEA DI, input_buffer
-    MOV BYTE PTR [DI], 32          ; Max length (32 characters)
-    MOV BYTE PTR [DI+1], 0         ; Initialize the length to 0
-
-    ; Read task input (using DOS function 0Ah to read a string)
-    LEA DX, input_buffer
-    MOV AH, 0AH
-    INT 21H
-
-    ; Check input length (input_buffer[0] stores the length of input)
-    MOV AL, input_buffer[0]
-    CMP AL, 0                      ; Ensure at least one character was entered
-    JE MAIN_MENU
-
-    ; Copy task to task_list
-    MOV AX, task_count             ; Task count index
-    MOV BX, 32                     ; Task size (32 bytes)
-    MUL BX                         ; Calculate offset: AX = task_count * 32
-    LEA SI, input_buffer + 1       ; Start of input (skip length byte)
-    LEA DI, task_list              ; Base address of task_list
-    ADD DI, AX                     ; Add offset to DI
-    MOV CX, 32                     ; Copy 32 bytes (task length)
-    REP MOVSB                      ; Copy task to task_list
-
-    ; Increment task count
-    INC task_count
-    JMP MAIN_MENU                  ; Return to menu
-
-TASK_FULL:
-    ; Display "Task list is full" message
-    CALL NEWLINEE
-    LEA DX, task_full_msg
-    CALL PRINTSTR
-    JMP MAIN_MENU                  ; Return to menu
-
-VIEW_TASKS:
-    ; Check if there are tasks
-    MOV AX, task_count
-    CMP AX, 0
-    JE NO_TASKS
-
-    ; Print all tasks in the list
-    XOR BX, BX                     ; Task index = 0 (start from first task)
-    MOV CX, task_count             ; Total number of tasks
-
-PRINT_TASKS:
-    ; Calculate the offset of the current task
-    MOV AX, BX                     ; Task index
-    MOV DX, 32                     ; Task size (32 bytes)
-    MUL DX                         ; Offset = BX * 32
-    LEA DI, task_list              ; Base address of task_list
-    ADD DI, AX                     ; Add offset to DI
-
-    ; Display the task
-    MOV DX, DI                     ; Point DX to the current task
-    CALL PRINTSTR
-
-    CALL NEWLINEE
-    ; Move to the next task
-    INC BX                         ; Increment task index
-    CMP BX, CX                     ; Check if we've printed all tasks
-    JL PRINT_TASKS                 ; If BX < CX, repeat
-    JMP MAIN_MENU                  ; Return to menu
-
-NO_TASKS:
-    ; Display "No tasks available" message
-    CALL NEWLINEE
-    LEA DX, no_tasks_msg
-    CALL PRINTSTR
-    JMP MAIN_MENU                  ; Return to menu
+.data
+    menu_msg        db 13,10,'=== To-Do List Manager ===',13,10
+                    db '1. Add Task',13,10
+                    db '2. View Tasks',13,10
+                    db '3. Exit',13,10
+                    db 'Choose option (1-3): $'
     
-EXIT_PROGRAM:
-    .EXIT
-MAIN ENDP
-NEWLINEE PROC NEAR
-    LEA DX,newline
-    MOV AH, 9H
-    INT 21H
-    RET
-NEWLINEE ENDP
-PRINTSTR PROC NEAR
-    MOV AH, 09H
-    INT 21H
-    RET
-PRINTSTR ENDP
-END MAIN
+    input_msg       db 13,10,'Enter task: $'
+    tasks_header    db 13,10,'=== Your Tasks ===',13,10,'$'
+    no_tasks_msg    db 13,10,'No tasks available.',13,10,'$'
+    task_prefix     db 13,10,'- $'
+    max_tasks       equ 10
+    max_task_len    equ 50
+    
+    tasks           db max_tasks * max_task_len dup('$')  ; Array to store tasks
+    task_count      db 0                                  ; Counter for number of tasks
+    buffer          db max_task_len                       ; Buffer for reading input
+                    db ?                                  ; Actual chars read
+                    db max_task_len dup('$')             ; Input buffer
+
+.code
+main proc
+    mov ax, @data
+    mov ds, ax
+    
+menu:
+    ; Display menu
+    mov ah, 09h
+    lea dx, menu_msg
+    int 21h
+    
+    ; Get user choice
+    mov ah, 01h
+    int 21h
+    
+    ; Process choice
+    cmp al, '1'
+    je add_task
+    cmp al, '2'
+    je view_tasks
+    cmp al, '3'
+    jne exit_program
+    jmp menu
+
+add_task:
+    ; Check if max tasks reached
+    mov al, task_count
+    cmp al, max_tasks
+    je menu
+    
+    ; Display input prompt
+    mov ah, 09h
+    lea dx, input_msg
+    int 21h
+    
+    ; Read task input
+    mov ah, 0Ah
+    lea dx, buffer
+    int 21h
+    
+    ; Calculate destination address
+    xor ax, ax
+    mov al, task_count
+    mov bl, max_task_len
+    mul bl
+    lea si, tasks
+    add si, ax
+    
+    ; Copy input to tasks array
+    lea bx, buffer + 2
+    mov cl, buffer + 1
+    xor ch, ch
+copy_loop:
+    mov al, [bx]
+    mov [si], al
+    inc bx
+    inc si
+    loop copy_loop
+    
+    ; Increment task count
+    inc task_count
+    jmp menu
+
+view_tasks:
+    ; Display header
+    mov ah, 09h
+    lea dx, tasks_header
+    int 21h
+    
+    ; Check if there are tasks
+    cmp task_count, 0
+    je no_tasks
+    
+    ; Display all tasks
+    xor cx, cx
+    mov cl, task_count
+    lea si, tasks
+    
+display_loop:
+    push cx
+    
+    ; Display task prefix
+    mov ah, 09h
+    lea dx, task_prefix
+    int 21h
+    
+    ; Display task
+    mov ah, 09h
+    mov dx, si
+    int 21h
+    
+    ; Move to next task
+    add si, max_task_len
+    
+    pop cx
+    loop display_loop
+    jmp menu
+
+no_tasks:
+    mov ah, 09h
+    lea dx, no_tasks_msg
+    int 21h
+    jmp menu
+
+exit_program:
+    mov ah, 4Ch
+    int 21h
+main endp
+end main
