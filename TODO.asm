@@ -41,7 +41,7 @@ menu:
     CMP AL, '2'
     JE view_tasks
     CMP AL, '3'
-    JNE exit_program
+    JMP exit_program
     JMP menu
 
 add_task:
