@@ -21,13 +21,11 @@ MAIN_MENU:
     CALL NEWLINEE
     ; Display menu
     LEA DX, menu
-    MOV AH, 09H
-    INT 21H
+    CALL PRINTSTR
 
     ; Prompt for choice
     LEA DX, prompt
-    MOV AH, 09H
-    INT 21H
+    CALL PRINTSTR
 
     ; Get user choice
     MOV AH, 01H                    ; Read single character
@@ -51,8 +49,7 @@ ADD_TASK:
 
     ; Prompt for task input
     LEA DX, add_msg
-    MOV AH, 09H
-    INT 21H
+    CALL PRINTSTR
 
     ; Clear the input buffer
     LEA DI, input_buffer
@@ -89,8 +86,7 @@ TASK_FULL:
     ; Display "Task list is full" message
     CALL NEWLINEE
     LEA DX, task_full_msg
-    MOV AH, 09H
-    INT 21H
+    CALL PRINTSTR
     JMP MAIN_MENU                  ; Return to menu
 
 VIEW_TASKS:
@@ -113,8 +109,7 @@ PRINT_TASKS:
 
     ; Display the task
     MOV DX, DI                     ; Point DX to the current task
-    MOV AH, 09H
-    INT 21H
+    CALL PRINTSTR
 
     CALL NEWLINEE
     ; Move to the next task
@@ -127,8 +122,7 @@ NO_TASKS:
     ; Display "No tasks available" message
     CALL NEWLINEE
     LEA DX, no_tasks_msg
-    MOV AH, 09H
-    INT 21H
+    CALL PRINTSTR
 
     JMP MAIN_MENU                  ; Return to menu
     
@@ -141,4 +135,9 @@ NEWLINEE PROC NEAR
     INT 21H
     RET
 NEWLINEE ENDP
+PRINTSTR PROC NEAR
+    MOV AH, 09H
+    INT 21H
+    RET
+PRINTSTR ENDP
 END MAIN
