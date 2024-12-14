@@ -1,132 +1,130 @@
-.model small
-.stack 100h
+.MODEL SMALL
+.STACK 100H
 
-.data
-    menu_msg        db 13,10,'=== To-Do List Manager ===',13,10
-                    db '1. Add Task',13,10
-                    db '2. View Tasks',13,10
-                    db '3. Exit',13,10
-                    db 'Choose option (1-3): $'
+.DATA
+    menu_msg        DB 13,10,'=== To-Do List Manager ===',13,10
+    DB '1. Add Task',13,10
+    DB '2. View Tasks',13,10
+    DB '3. Exit',13,10
+    DB 'Choose option (1-3): $'
     
-    input_msg       db 13,10,'Enter task: $'
-    tasks_header    db 13,10,'=== Your Tasks ===',13,10,'$'
-    no_tasks_msg    db 13,10,'No tasks available.',13,10,'$'
-    task_prefix     db 13,10,'- $'
+    input_msg       DB 13,10,'Enter task: $'
+    tasks_header    DB 13,10,'=== Your Tasks ===',13,10,'$'
+    no_tasks_msg    DB 13,10,'No tasks available.',13,10,'$'
+    task_prefix     DB 13,10,'- $'
     max_tasks       equ 10
     max_task_len    equ 50
     
-    tasks           db max_tasks * max_task_len dup('$')  ; Array to store tasks
-    task_count      db 0                                  ; Counter for number of tasks
-    buffer          db max_task_len                       ; Buffer for reading input
-                    db ?                                  ; Actual chars read
-                    db max_task_len dup('$')             ; Input buffer
+    tasks           DB max_tasks * max_task_len dup('$')  ; Array to store tasks
+    task_count      DB 0                                  ; Counter for number of tasks
+    buffer          DB max_task_len                       ; Buffer for reading input
+    DB ?                                  ; Actual chars read
+    DB max_task_len dup('$')             ; Input buffer
 
-.code
-main proc
-    mov ax, @data
-    mov ds, ax
+    .CODE
+    main PROC FAR
+    .STARTUP
     
 menu:
     ; Display menu
-    mov ah, 09h
-    lea dx, menu_msg
-    int 21h
+    MOV AH, 09H
+    LEA dx, menu_msg
+    INT 21H
     
     ; Get user choice
-    mov ah, 01h
-    int 21h
+    MOV AH, 01H
+    INT 21H
     
     ; Process choice
-    cmp al, '1'
-    je add_task
-    cmp al, '2'
-    je view_tasks
-    cmp al, '3'
-    jne exit_program
-    jmp menu
+    CMP AL, '1'
+    JE add_task
+    CMP AL, '2'
+    JE view_tasks
+    CMP AL, '3'
+    JNE exit_program
+    JMP menu
 
 add_task:
     ; Check if max tasks reached
-    mov al, task_count
-    cmp al, max_tasks
-    je menu
+    MOV AL, task_count
+    CMP AL, max_tasks
+    JE menu
     
     ; Display input prompt
-    mov ah, 09h
-    lea dx, input_msg
-    int 21h
+    MOV AH, 09H
+    LEA DX, input_msg
+    INT 21H
     
     ; Read task input
-    mov ah, 0Ah
-    lea dx, buffer
-    int 21h
+    MOV AH, 0AH
+    LEA DX, buffer
+    INT 21H
     
     ; Calculate destination address
-    xor ax, ax
-    mov al, task_count
-    mov bl, max_task_len
-    mul bl
-    lea si, tasks
-    add si, ax
+    XOR AX, AX
+    MOV AL, task_count
+    MOV BL, max_task_len
+    MUL BL
+    LEA SI, tasks
+    ADD SI, AX
     
     ; Copy input to tasks array
-    lea bx, buffer + 2
-    mov cl, buffer + 1
-    xor ch, ch
+    LEA BX, buffer + 2
+    MOV CH, buffer + 1
+    XOR CH, CH
 copy_loop:
-    mov al, [bx]
-    mov [si], al
-    inc bx
-    inc si
-    loop copy_loop
+    MOV AL, [BX]
+    MOV [SI], AL
+    INC BX
+    INC SI
+    LOOP copy_loop
     
     ; Increment task count
-    inc task_count
-    jmp menu
+    INC task_count
+    JMP menu
 
 view_tasks:
     ; Display header
-    mov ah, 09h
-    lea dx, tasks_header
-    int 21h
+    MOV AH, 09H
+    LEA DX, tasks_header
+    INT 21H
     
     ; Check if there are tasks
-    cmp task_count, 0
-    je no_tasks
+    CMP task_count, 0
+    JE no_tasks
     
     ; Display all tasks
-    xor cx, cx
-    mov cl, task_count
-    lea si, tasks
+    XOR CX, CX
+    MOV CL, task_count
+    LEA SI, tasks
     
 display_loop:
-    push cx
+    PUSH CX
     
     ; Display task prefix
-    mov ah, 09h
-    lea dx, task_prefix
-    int 21h
+    MOV AH, 09H
+    LEA DX, task_prefix
+    INT 21H
     
     ; Display task
-    mov ah, 09h
-    mov dx, si
-    int 21h
+    MOV AH, 09H
+    MOV DX, SI
+    INT 21H
     
     ; Move to next task
-    add si, max_task_len
+    ADD SI, max_task_len
     
-    pop cx
-    loop display_loop
-    jmp menu
+    POP CX
+    LOOP display_loop
+    JMP menu
 
 no_tasks:
-    mov ah, 09h
-    lea dx, no_tasks_msg
-    int 21h
-    jmp menu
+    MOV AH, 09H
+    LEA DX, no_tasks_msg
+    INT 21H
+    JMP menu
 
 exit_program:
-    mov ah, 4Ch
-    int 21h
-main endp
-end main
+    .EXIT
+    main ENDP
+END main
