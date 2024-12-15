@@ -62,7 +62,7 @@ menu:
     CMP AL, '3'
     JE show_task_count
     CMP AL, '4'
-    JE exit_program
+    JMP exit_program
     JMP menu
 
 add_task:
