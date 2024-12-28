@@ -27,9 +27,8 @@
 ; Procedure to display the number of tasks
 display_task_count PROC NEAR
     ; Display task count message
-    MOV AH, 09H
     LEA DX, task_count_msg
-    INT 21H
+    CALL PRINT
 
     ; Convert task count to ASCII for display
     MOV AL, task_count
@@ -46,9 +45,8 @@ main PROC FAR
     
 menu:
     ; Display menu
-    MOV AH, 09H
     LEA DX, menu_msg
-    INT 21H
+    CALL PRINT
     
     ; Get user choice
     MOV AH, 01H
@@ -72,9 +70,8 @@ add_task:
     JE menu
     
     ; Display input prompt
-    MOV AH, 09H
     LEA DX, input_msg
-    INT 21H
+    CALL PRINT
     
     ; Read task input
     MOV AH, 0AH
@@ -106,9 +103,8 @@ copy_loop:
 
 view_tasks:
     ; Display header
-    MOV AH, 09H
     LEA DX, tasks_header
-    INT 21H
+    CALL PRINT
     
     ; Check if there are tasks
     CMP task_count, 0
@@ -123,14 +119,12 @@ display_loop:
     PUSH CX
     
     ; Display task prefix
-    MOV AH, 09H
     LEA DX, task_prefix
-    INT 21H
+    CALL PRINT 
     
     ; Display task
-    MOV AH, 09H
     MOV DX, SI
-    INT 21H
+    CALL PRINT
     
     ; Move to next task
     ADD SI, max_task_len
@@ -140,9 +134,9 @@ display_loop:
     JMP menu
 
 no_tasks:
-    MOV AH, 09H
+
     LEA DX, no_tasks_msg
-    INT 21H
+    CALL PRINT
     JMP menu
 
 show_task_count:
@@ -152,4 +146,9 @@ show_task_count:
 exit_program:
     .EXIT
     main ENDP
+    PRINT PROC NEAR
+        MOV AH, 9H
+        INT 21H
+        RET
+    PRINT ENDP
 END main
